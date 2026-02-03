@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  mysql-server:
+    image: mysql:5.7
+    container_name: zabbix-mysql
+    restart: always
+    environment:
+      - MYSQL_DATABASE=zabbix
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=zabbix
+      - MYSQL_ROOT_PASSWORD=root_pwd
+    volumes:
+      - ./mysql_data_final:/var/lib/mysql
+    # 保持这个好用的参数
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_bin --log_bin_trust_function_creators=1 --max_allowed_packet=512M --skip-name-resolve
+    networks:
+      - zabbix-net
+
+  zabbix-server:
+    image: zabbix/zabbix-server-mysql:ubuntu-6.0-latest
+    container_name: zabbix-server
+    restart: always
+    ports:
+      - "10051:10051"
+    environment:
+      - DB_SERVER_HOST=mysql-server
+      - DB_SERVER_DBNAME=zabbix
+      - DB_SERVER_USER=zabbix
+      - DB_SERVER_PASSWORD=zabbix
+      - MYSQL_ROOT_PASSWORD=root_pwd
+      - ZBX_JAVAGATEWAY=zabbix-java-gateway
+      # ⚠️ 关键修正：允许使用 MySQL 5.7
+      - ZBX_ALLOWUNSUPPORTEDDBVERSIONS=1
+    depends_on:
+      - mysql-server
+    networks:
+      - zabbix-net
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-mysql:ubuntu-6.0-latest
+    container_name: zabbix-web
+    restart: always
+    ports:
+      - "80:8080"
+    environment:
+      - ZBX_SERVER_HOST=zabbix-server
+      - DB_SERVER_HOST=mysql-server
+      - DB_SERVER_DBNAME=zabbix
+      - DB_SERVER_USER=zabbix
+      - DB_SERVER_PASSWORD=zabbix
+      - MYSQL_ROOT_PASSWORD=root_pwd
+      - PHP_TZ=Asia/Shanghai
+      # ⚠️ Web 端也加上这个，防止页面报错
+      - ZBX_ALLOWUNSUPPORTEDDBVERSIONS=1
+    depends_on:
+      - zabbix-server
+    networks:
+      - zabbix-net
+
+  zabbix-java-gateway:
+    image: zabbix/zabbix-java-gateway:ubuntu-6.0-latest
+    container_name: zabbix-java-gateway
+    restart: always
+    networks:
+      - zabbix-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: zabbix-grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+    environment:
+      - GF_INSTALL_PLUGINS=alexanderzobnin-zabbix-app
+    depends_on:
+      - zabbix-server
+    networks:
+      - zabbix-net
+
+networks:
+  zabbix-net:
+    driver: bridge

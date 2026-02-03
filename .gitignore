@@ -1,0 +1,5 @@
+mysql_data/
+mysql_data_final/
+grafana_data/
+*.log
+.DS_Store

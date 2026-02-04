@@ -1,0 +1,18 @@
+# 一、docker部署过程中问题
+
+### 1. 故障现象
+
+Zabbix Server 启动失败，日志报错 Packet bigger than 'max_allowed_packet'。
+调整 Packet 后，报错变为 Access denied for user 'zabbix'@'IP'。
+
+### 2. 根本原因 (Root Cause)
+
+数据包限制 (Packet Limit)：Zabbix 初始化的 SQL 文件包含大量图片/二进制数据，超过了 MySQL 默认的 4MB/16MB 限制，导致数据库初始化中途崩盘。
+僵尸数据 (Dirty Volume)：初始化崩盘后，虽然容器重启了，但挂载的 mysql_data 目录里残留了“半死不活”的数据库文件。Docker 认为数据已存在，跳过了后续的用户创建脚本。
+配置不一致 (Configuration Mismatch)：这是最致命的。我们在 Environment 变量里设置了 zabbix_pwd，但 Zabbix Server 内部某些逻辑回退到了默认密码 zabbix，导致“锁”和“钥匙”配不上。
+
+### 3. 解决方案
+
+彻底清理：rm -rf mysql_data，强制使用新盘，触发 MySQL 的全新初始化流程。
+参数调优：command 中强制加入 --max_allowed_packet=512M。
+配置对齐：放弃自定义复杂密码，将 MYSQL_PASSWORD 和 DB_SERVER_PASSWORD 统一修改为默认值 zabbix。

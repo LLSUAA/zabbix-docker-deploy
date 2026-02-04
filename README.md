@@ -5,7 +5,7 @@
 
 ## 🛠️ 架构说明
 - **OS**: Ubuntu 22.04 LTS
-- **Database**: MySQL 5.7 (配置 max_allowed_packet=512M 解决导入崩溃问题)
+- **Database**: MySQL 5.7 
 - **Server**: Zabbix 6.0 LTS (Ubuntu base)
 - **Web**: Nginx + PHP
 - **Addons**: Java Gateway + Grafana

@@ -4,6 +4,7 @@
 采用 **Zabbix 6.0 LTS + MySQL 5.7** 黄金组合，已针对生产环境进行参数调优。
 
 ## 🛠️ 架构说明
+- **OS**: Ubuntu 22.04 LTS
 - **Database**: MySQL 5.7 (配置 max_allowed_packet=512M 解决导入崩溃问题)
 - **Server**: Zabbix 6.0 LTS (Ubuntu base)
 - **Web**: Nginx + PHP
